@@ -22,7 +22,7 @@ class Chain{
     minePendingTransactions(miningRewardAddress){
         this.height++;
 
-        let block = new Block(this.height, Date.now(), this.pendingTransactions);
+        let block = new Block(this.height, Date.now(), this.pendingTransactions, this.getLatestBlock().hash);
         block.mineBlock(this.difficulty);
 
         this.chain.push(block);
@@ -35,8 +35,16 @@ class Chain{
         console.log('New miner transfer to: ', miningRewardAddress, ' of value: ', this.miningReward);
     }
 
-    createTransaction(tx){
-        this.pendingTransactions.push(tx);
+    addTransaction(transaction){
+        if(!transaction.fromAddress || !transaction.toAddress){
+            throw new Error('Transaction must include from and to address');
+        }
+
+        if(!transaction.isValid()){
+            throw new Error('Cannot add invalid transaction to chain');
+        }
+
+        this.pendingTransactions.push(transaction);
     }
 
     getBalanceOfAddress(address){
@@ -63,14 +71,17 @@ class Chain{
             const previousBlock = this.chain[i - 1];
 
             if(!currentBlock.hasValidTransactions()){
+                console.log('Blockchain has invalid transactions!');
                 return false;
             }
 
             if(currentBlock.hash !== currentBlock.calculateHash()){
+                console.log('Block hash is inconsistent!');
                 return false;
             }
 
             if(currentBlock.previousHash !== previousBlock.hash){
+                console.log('Previous block hash is not valid!');
                 return false;
             }
         }
